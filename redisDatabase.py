@@ -25,6 +25,7 @@ class ProtocolHandler(object):
 
     def handle_request(self, socket_file):
         first_byte = socket_file.read(1)
+
         if not first_byte:
             raise Disconnect()
 
