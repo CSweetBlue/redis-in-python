@@ -1,5 +1,6 @@
+
 from gevent import socket
-from gevent.pool import pool
+from gevent.pool import Pool
 from gevent.server import StreamServer
 
 from collections import namedtuple
@@ -69,6 +70,8 @@ class ProtocolHandler(object):
         socket_file.flush()
 
     def _write(self, buf, data):
+        print(type(data))
+        
         if isinstance(data, str):
             data = data.encode('utf-8')
 
@@ -95,7 +98,7 @@ class ProtocolHandler(object):
 
 class Server(object):
     def __init__(self, host='127.0.0.1', port= 31337, max_clients=64):
-        self._pool = pool(max_clients)
+        self._pool = Pool(max_clients)
         self._server = StreamServer((host, port), self.connection_handler, spawn = self._pool)
         self._protocol = ProtocolHandler()
         self._kv = {}
