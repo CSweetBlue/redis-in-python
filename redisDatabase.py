@@ -90,7 +90,7 @@ class ProtocolHandler(object):
         elif data is None:
             buf.write('$-1\r\n')
         else:
-            raise CommandError('unrecognized type: %s' % type(data))
+            raise CommandError('Unrecognized type: %s' % type(data))
 
 
 class Server(object):
@@ -99,6 +99,7 @@ class Server(object):
         self._server = StreamServer((host, port), self.connection_handler, spawn = self._pool)
         self._protocol = ProtocolHandler()
         self._kv = {}
+        self._commands = self.get_commands()
 
     def connection_handler(self, conn, address):
         socket_file = conn.makefile('rwb')
@@ -116,9 +117,56 @@ class Server(object):
             
             self._protocol.write_response(socket_file, resp)
 
-    def get_response(self, data):
+    def get_commands(self):
+        return {
+            'GET' : self.get,
+            'SET' : self.set,
+            'DELETE' : self.delete
+            'FLUSH' : self.flush,
+            'MGET' : self.mget,
+            'MSET' : self.mset,
+        }
 
-        pass
+    def get_response(self, data):
+        if not isinstance(data, list):
+            try:
+                data = data.split()
+            except:
+                raise CommandError('Request must be list or simple string.')
+
+        if not data:
+            raise CommandError('Missing command.')
+
+        command = data[0].upper()
+        
+        if command not in self._commands:
+            raise CommandError('Unrecognized command: %s' % command)
+
+    def get(self, key):
+        return self._kv.get(key)
+    
+    def set(self, key, value):
+        self._kv[key] = value
+
+    def delete(self, key):
+        if key in self._kv:
+            del self._kv[key]
+            return 1
+        return 0
+
+    def flush(self):
+        kvlen = len(self._kv)
+        self._kv.clear()
+        return kvlen
+
+    def mget(self, *keys):
+        return [self._kv.get(key) for key in keys]
+
+    def mset(self, *items):
+        data = zip(items[::2], items[1::2])
+        for key, value in data:
+            self._kv[key] = value
+        return len(data)
 
     def run(self):
         self._server.serve_forever()
