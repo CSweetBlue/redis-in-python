@@ -4,6 +4,9 @@ from gevent.server import StreamServer
 from collections import namedtuple
 
 import protocolHandler as pH
+import logging
+
+logger = logging.getLogger(__name__)
 
 class CommandError(Exception): pass
 class Disconnect(Exception): pass
@@ -19,29 +22,32 @@ class Server(object):
         self._commands = self.get_commands()
 
     def connection_handler(self, conn, address):
+        logger.info('Connection received: %s:%s' % address)
         socket_file = conn.makefile('rwb')
 
         while True:
             try:
                 data = self._protocol.handle_request(socket_file)
             except Disconnect:
+                logger.info('Client went away: %s:%s' % address)
                 break
 
             try:
                 resp = self.get_response(data)
             except CommandError as exc:
+                logger.exception('Command error')
                 resp = Error(exc.args[0])
             
             self._protocol.write_response(socket_file, resp)
 
     def get_commands(self):
         return {
-            'GET' : self.get,
-            'SET' : self.set,
-            'DELETE' : self.delete,
-            'FLUSH' : self.flush,
-            'MGET' : self.mget,
-            'MSET' : self.mset,
+            b'GET' : self.get,
+            b'SET' : self.set,
+            b'DELETE' : self.delete,
+            b'FLUSH' : self.flush,
+            b'MGET' : self.mget,
+            b'MSET' : self.mset,
         }
 
     def get_response(self, data):
@@ -58,6 +64,10 @@ class Server(object):
 
         if command not in self._commands:
             raise CommandError('Unrecognized command: %s' % command)
+        else:
+            logger.debug('Received %s', command)
+
+        return self._commands[command](*data[1:])
 
     def get(self, key):
         return self._kv.get(key)
@@ -91,4 +101,6 @@ class Server(object):
 
 if __name__ == '__main__':
     from gevent import monkey; monkey.patch_all()
+    logger.addHandler(logging.StreamHandler())
+    logger.setLevel(logging.DEBUG)
     Server().run()

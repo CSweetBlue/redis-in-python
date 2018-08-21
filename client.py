@@ -6,7 +6,6 @@ from collections import namedtuple
 import protocolHandler as pH
 
 class CommandError(Exception): pass
-class Disconnect(Exception): pass
 
 Error = namedtuple('Error', ('message',))
 
@@ -27,19 +26,19 @@ class Client(object):
         return resp
     
     def get(self, key):
-        return self.execute('GET', key)
+        return self.execute(b'GET', key)
 
     def set(self, key, value):
-        return self.execute('SET', key, value)
+        return self.execute(b'SET', key, value)
 
     def delete(self, key):
-        return self.execute('DELETE', key)
+        return self.execute(b'DELETE', key)
 
     def flush(self):
-        return self.execute('FLUSH')
+        return self.execute(b'FLUSH')
     
     def mget(self, *keys):
-        return self.execute('MGET', *keys)
+        return self.execute(b'MGET', *keys)
 
     def mset(self, *items):
-        return self.execute('MSET', *items)
+        return self.execute(b'MSET', *items)
