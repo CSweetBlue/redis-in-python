@@ -93,7 +93,7 @@ class Server(object):
         data = zip(items[::2], items[1::2])
         for key, value in data:
             self._kv[key] = value
-        return len(data)
+        return len(list(data))
 
     def run(self):
         self._server.serve_forever()

@@ -73,7 +73,7 @@ class ProtocolHandler(object):
         if isinstance(data, bytes):
             buf.write(b'$%d\r\n%s\r\n' % (len(data), data))
         elif isinstance(data, int):
-            buf.write(b':%s\r\n' % data)
+            buf.write(b':%d\r\n' % data)
         elif isinstance(data, Error):
             buf.write(b'-%s\r\n' % Error.message)
         elif isinstance(data, (list, tuple)):
